@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <titre></titre>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 600px;
+            margin: 40px auto;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 6px 10px;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        .task {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .done {
+            background-color: #e6ffe6;
+            text-decoration: line-through;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Gestion des tâches</h2>
+
+<h3>Ajouter une tâche</h3>
+<input type="text" id="titre" placeholder="Titre">
+<textarea id="description" placeholder="Description"></textarea>
+<button id="submitBtn" onclick="addOrUpdateTask()">Ajouter</button>
+<hr>
+
+<h3>Liste des tâches</h3>
+<div id="taches"></div>
+
+
+<script>
+
+    const API_URL = "/api/taches";
+    let editingId = null;
+
+    function loadTasks() {
+        fetch(API_URL)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById("taches");
+                container.innerHTML = "";
+
+                data.forEach(task => {
+
+                    const div = document.createElement("div");
+                    div.className = "task";
+
+                    if (task.statut === "TERMINE") {
+                        div.classList.add("done");
+                    }
+
+                    const titre = document.createElement("strong");
+                    titre.innerText = task.titre;
+
+                    const desc = document.createElement("p");
+                    desc.innerText = task.description;
+
+                    const editBtn = document.createElement("button");
+                    editBtn.innerText = "Modifier";
+                    editBtn.onclick = () => startEdit(task);
+
+                    const completeBtn = document.createElement("button");
+                    completeBtn.innerText = "Terminer";
+                    completeBtn.onclick = () => markAsCompleted(task.id);
+
+
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.innerText = "Supprimer";
+                    deleteBtn.onclick = () => deleteTask(task.id);
+
+                    div.appendChild(titre);
+                    div.appendChild(desc);
+                    div.appendChild(editBtn);
+                    div.appendChild(completeBtn);
+                    div.appendChild(deleteBtn);
+
+                    container.appendChild(div);
+                });
+            });
+    }
+
+    function startEdit(task) {
+        editingId = task.id;
+        document.getElementById("titre").value = task.titre;
+        document.getElementById("description").value = task.description;
+        document.getElementById("submitBtn").innerText = "Mettre à jour";
+    }
+
+    function addOrUpdateTask() {
+        const titre = document.getElementById("titre").value;
+        const description = document.getElementById("description").value;
+
+        if (editingId === null) {
+            fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ titre, description })
+            }).then(() => {
+                resetForm();
+                loadTasks();
+            });
+
+        } else {
+            fetch(`${API_URL}/${editingId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ titre, description })
+            }).then(() => {
+                resetForm();
+                loadTasks();
+            });
+        }
+    }
+
+    function resetForm() {
+        editingId = null;
+        document.getElementById("titre").value = "";
+        document.getElementById("description").value = "";
+        document.getElementById("submitBtn").innerText = "Ajouter";
+    }
+
+    function deleteTask(id) {
+        if (confirm("Supprimer cette tâche ?")) {
+            fetch(`${API_URL}/${id}`, {
+                method: "DELETE"
+            }).then(() => loadTasks());
+        }
+    }
+
+    function markAsCompleted(id) {
+        fetch(`${API_URL}/${id}/complete`, {
+            method: "PATCH"
+        }).then(() => loadTasks());
+    }
+
+    loadTasks();
+
+</script>
+
+</body>
+</html>
