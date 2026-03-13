@@ -7,8 +7,7 @@ Technologies :
 - HTML
 - CSS
 - JavaScript
-Base de données:
-  MySQL
+- MySQL
 
 Fonctionnalités :
 - Ajouter une tâche
